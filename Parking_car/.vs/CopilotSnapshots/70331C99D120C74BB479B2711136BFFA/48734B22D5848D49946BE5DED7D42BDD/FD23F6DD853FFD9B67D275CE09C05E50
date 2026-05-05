@@ -1,0 +1,118 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Data;
+using System.Data.SQLite;
+using System.IO;
+
+namespace Parking_car
+{
+    public class DatabaseService
+    {
+        private readonly string _dbPath;
+        private readonly string _connStr;
+
+        public DatabaseService(string dbFileName = "parking.db")
+        {
+            _dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, dbFileName);
+            _connStr = $"Data Source={_dbPath};Version=3;";
+        }
+
+        public void Initialize()
+        {
+            if (!File.Exists(_dbPath))
+                SQLiteConnection.CreateFile(_dbPath);
+
+            using (var conn = new SQLiteConnection(_connStr))
+            {
+                conn.Open();
+                string sql = @"
+CREATE TABLE IF NOT EXISTS parking_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plate TEXT,
+    rfid TEXT,
+    lane TEXT,
+    time_in TEXT,
+    time_out TEXT,
+    image_in_path TEXT,
+    image_out_path TEXT
+);
+";
+                using (var cmd = new SQLiteCommand(sql, conn))
+                    cmd.ExecuteNonQuery();
+            }
+        }
+
+        public long InsertEntry(string rfid, string plate, string lane, string timeIn, string imageInPath)
+        {
+            using (var conn = new SQLiteConnection(_connStr))
+            {
+                conn.Open();
+                string sql = @"
+INSERT INTO parking_log(plate, rfid, lane, time_in, time_out, image_in_path, image_out_path)
+VALUES(@plate, @rfid, @lane, @time_in, NULL, @img_in, NULL);
+SELECT last_insert_rowid();
+";
+                using (var cmd = new SQLiteCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@plate", plate ?? "");
+                    cmd.Parameters.AddWithValue("@rfid", rfid ?? "");
+                    cmd.Parameters.AddWithValue("@lane", lane ?? "ENTRY");
+                    cmd.Parameters.AddWithValue("@time_in", timeIn);
+                    cmd.Parameters.AddWithValue("@img_in", imageInPath ?? "");
+                    object result = cmd.ExecuteScalar();
+                    return Convert.ToInt64(result);
+                }
+            }
+        }
+
+        public bool UpdateExitByRfid(string rfid, string timeOut, string imageOutPath)
+        {
+            using (var conn = new SQLiteConnection(_connStr))
+            {
+                conn.Open();
+
+                // tìm record chưa có time_out theo rfid gần nhất
+                string sql = @"
+UPDATE parking_log
+SET time_out = @time_out,
+    image_out_path = @img_out
+WHERE id = (
+    SELECT id FROM parking_log
+    WHERE rfid = @rfid AND (time_out IS NULL OR time_out = '')
+    ORDER BY id DESC
+    LIMIT 1
+);
+";
+                using (var cmd = new SQLiteCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@time_out", timeOut);
+                    cmd.Parameters.AddWithValue("@img_out", imageOutPath ?? "");
+                    cmd.Parameters.AddWithValue("@rfid", rfid ?? "");
+                    int rows = cmd.ExecuteNonQuery();
+                    return rows > 0;
+                }
+            }
+        }
+
+        public int CountCarsInside()
+        {
+            using (var conn = new SQLiteConnection(_connStr))
+            {
+                conn.Open();
+                string sql = @"
+SELECT COUNT(*) FROM parking_log
+WHERE time_in IS NOT NULL AND time_in <> ''
+  AND (time_out IS NULL OR time_out = '');
+";
+                using (var cmd = new SQLiteCommand(sql, conn))
+                {
+                    object r = cmd.ExecuteScalar();
+                    return Convert.ToInt32(r);
+                }
+            }
+        }
+    }
+}

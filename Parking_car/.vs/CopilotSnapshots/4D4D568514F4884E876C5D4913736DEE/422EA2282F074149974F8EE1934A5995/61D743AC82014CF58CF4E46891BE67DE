@@ -1,0 +1,229 @@
+﻿using Parking_car;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Parking_car
+{
+    public class ParkingController
+    {
+        private readonly SerialManager _serial;
+        private readonly CameraManager _cams;
+        private readonly DatabaseService _db;
+        private readonly Action<string> _log;
+        private readonly Action<int> _updateTotal;
+
+        // Buffer “phiên” xử lý
+        private bool _entrySessionActive = false;
+        private bool _exitSessionActive = false;
+        private DateTime _entryStart;
+        private DateTime _exitStart;
+
+        private string _lastEntryRfid = null;
+        private string _lastExitRfid = null;
+
+        private const int SESSION_TIMEOUT_SEC = 20;
+
+        public ParkingController(
+            SerialManager serial,
+            CameraManager cams,
+            DatabaseService db,
+            Action<string> logger,
+            Action<int> updateTotalCars
+        )
+        {
+            _serial = serial;
+            _cams = cams;
+            _db = db;
+            _log = logger;
+            _updateTotal = updateTotalCars;
+        }
+
+        public void HandleEspLine(string line)
+        {
+            _log($"ESP32> {line}");
+
+            if (line == "ENTRY_DETECTED")
+            {
+                _entrySessionActive = true;
+                _entryStart = DateTime.Now;
+                _lastEntryRfid = null;
+                _ = HandleEntryDetectedAsync();
+                return;
+            }
+
+            if (line == "EXIT_DETECTED")
+            {
+                _exitSessionActive = true;
+                _exitStart = DateTime.Now;
+                _lastExitRfid = null;
+                _ = HandleExitDetectedAsync();
+                return;
+            }
+
+            if (line.StartsWith("RFID_ENTRY:UID="))
+            {
+                _lastEntryRfid = line.Replace("RFID_ENTRY:UID=", "").Trim();
+                _log($"RFID ENTRY UID = {_lastEntryRfid}");
+                TryAuthorizeEntry();
+                return;
+            }
+
+            if (line.StartsWith("RFID_EXIT:UID="))
+            {
+                _lastExitRfid = line.Replace("RFID_EXIT:UID=", "").Trim();
+                _log($"RFID EXIT UID = {_lastExitRfid}");
+                TryAuthorizeExit();
+                return;
+            }
+
+            if (line == "ENTRY_PASSED" || line == "EXIT_PASSED")
+            {
+                // ESP32 tự đóng rồi
+                UpdateTotalCarsFromDb();
+                return;
+            }
+
+            if (line == "ENTRY_TIMEOUT")
+            {
+                _entrySessionActive = false;
+                _log("ENTRY session timeout!");
+                return;
+            }
+
+            if (line == "EXIT_TIMEOUT")
+            {
+                _exitSessionActive = false;
+                _log("EXIT session timeout!");
+                return;
+            }
+        }
+
+        private async Task HandleEntryDetectedAsync()
+        {
+            // Snapshot camera entry
+            Bitmap snap = _cams.SnapshotEntry();
+            string imgPath = SaveSnapshot(snap, "entry");
+            _log($"Saved ENTRY snapshot: {imgPath}");
+
+            // Ở đây bạn sẽ OCR biển số (tạm để trống)
+            // string plate = await OcrAsync(snap);
+            string plate = ""; // stub
+
+            // chờ RFID trong cửa sổ SESSION_TIMEOUT_SEC
+            await WaitForConditionAsync(() =>
+                _lastEntryRfid != null || !IsEntrySessionValid(), 50);
+
+            if (!IsEntrySessionValid())
+            {
+                _entrySessionActive = false;
+                _log("ENTRY session expired before RFID.");
+                return;
+            }
+
+            // RFID đã có
+            string timeIn = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            _db.InsertEntry(_lastEntryRfid, plate, "ENTRY", timeIn, imgPath);
+
+            _serial.SendLine("OPEN_ENTRY");
+            _log("PC> OPEN_ENTRY");
+
+            _entrySessionActive = false;
+            UpdateTotalCarsFromDb();
+        }
+
+        private async Task HandleExitDetectedAsync()
+        {
+            // Snapshot camera exit
+            Bitmap snap = _cams.SnapshotExit();
+            string imgPath = SaveSnapshot(snap, "exit");
+            _log($"Saved EXIT snapshot: {imgPath}");
+
+            string plate = ""; // stub OCR
+
+            // chờ RFID
+            await WaitForConditionAsync(() =>
+                _lastExitRfid != null || !IsExitSessionValid(), 50);
+
+            if (!IsExitSessionValid())
+            {
+                _exitSessionActive = false;
+                _log("EXIT session expired before RFID.");
+                return;
+            }
+
+            string timeOut = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            bool ok = _db.UpdateExitByRfid(_lastExitRfid, timeOut, imgPath);
+
+            if (!ok)
+            {
+                _log("Không tìm thấy xe trong bãi với RFID này (hoặc đã OUT). Không mở barie!");
+                _exitSessionActive = false;
+                return;
+            }
+
+            _serial.SendLine("OPEN_EXIT");
+            _log("PC> OPEN_EXIT");
+
+            _exitSessionActive = false;
+            UpdateTotalCarsFromDb();
+        }
+
+        private void TryAuthorizeEntry()
+        {
+            // Nếu muốn “quét RFID trước khi IR”, bạn mở rộng logic ở đây
+        }
+
+        private void TryAuthorizeExit()
+        {
+        }
+
+        private bool IsEntrySessionValid()
+        {
+            if (!_entrySessionActive) return false;
+            return (DateTime.Now - _entryStart).TotalSeconds <= SESSION_TIMEOUT_SEC;
+        }
+
+        private bool IsExitSessionValid()
+        {
+            if (!_exitSessionActive) return false;
+            return (DateTime.Now - _exitStart).TotalSeconds <= SESSION_TIMEOUT_SEC;
+        }
+
+        private async Task WaitForConditionAsync(Func<bool> condition, int delayMs)
+        {
+            while (!condition())
+                await Task.Delay(delayMs);
+        }
+
+        private string SaveSnapshot(Bitmap bmp, string prefix)
+        {
+            try
+            {
+                if (bmp == null) return "";
+                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "snapshots");
+                Directory.CreateDirectory(dir);
+                string file = $"{prefix}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.jpg";
+                string path = Path.Combine(dir, file);
+                bmp.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
+                bmp.Dispose();
+                return path;
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private void UpdateTotalCarsFromDb()
+        {
+            int total = _db.CountCarsInside();
+            _updateTotal(total);
+            _log($"Tổng xe trong bãi: {total}");
+        }
+    }
+}

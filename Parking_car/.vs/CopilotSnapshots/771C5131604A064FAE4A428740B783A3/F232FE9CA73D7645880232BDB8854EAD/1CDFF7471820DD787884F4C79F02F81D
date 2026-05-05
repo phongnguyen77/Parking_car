@@ -1,0 +1,368 @@
+﻿namespace Parking_car
+{
+    partial class Form1
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            System.Windows.Forms.Label label1;
+            System.Windows.Forms.Label label4;
+            this.labelEntries = new System.Windows.Forms.Label();
+            this.labelExits = new System.Windows.Forms.Label();
+            this.labelPlateEntry = new System.Windows.Forms.Label();
+            this.labelPlateExit = new System.Windows.Forms.Label();
+            this.picEntry = new System.Windows.Forms.PictureBox();
+            this.picExit = new System.Windows.Forms.PictureBox();
+            this.btnConnect = new System.Windows.Forms.Button();
+            this.txtTotalCars = new System.Windows.Forms.TextBox();
+            this.txtTotalEntries = new System.Windows.Forms.TextBox();
+            this.txtTotalExits = new System.Windows.Forms.TextBox();
+            this.txtPlateEntry = new System.Windows.Forms.TextBox();
+            this.txtPlateExit = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.txtLog = new System.Windows.Forms.RichTextBox();
+            this.btnExit = new System.Windows.Forms.Button();
+            this.btnResetDb = new System.Windows.Forms.Button();
+            this.btnRestart = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            label1 = new System.Windows.Forms.Label();
+            label4 = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.picEntry)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.picExit)).BeginInit();
+            this.SuspendLayout();
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            label1.ForeColor = System.Drawing.Color.Red;
+            label1.Location = new System.Drawing.Point(583, 138);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(159, 16);
+            label1.TabIndex = 8;
+            label1.Text = "TỔNG XE TRONG BÃI";
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            label4.Location = new System.Drawing.Point(617, 372);
+            label4.Name = "label4";
+            label4.Size = new System.Drawing.Size(75, 13);
+            label4.TabIndex = 14;
+            label4.Text = "STATUS LOG";
+            label4.Click += new System.EventHandler(this.label4_Click);
+            // 
+            // labelEntries
+            // 
+            this.labelEntries.AutoSize = true;
+            this.labelEntries.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.labelEntries.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelEntries.ForeColor = System.Drawing.Color.Fuchsia;
+            this.labelEntries.Location = new System.Drawing.Point(590, 299);
+            this.labelEntries.Name = "labelEntries";
+            this.labelEntries.Size = new System.Drawing.Size(152, 16);
+            this.labelEntries.TabIndex = 15;
+            this.labelEntries.Text = "TỔNG LƯỢT XE VÀO";
+            // 
+            // labelExits
+            // 
+            this.labelExits.AutoSize = true;
+            this.labelExits.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.labelExits.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelExits.ForeColor = System.Drawing.Color.Fuchsia;
+            this.labelExits.Location = new System.Drawing.Point(590, 345);
+            this.labelExits.Name = "labelExits";
+            this.labelExits.Size = new System.Drawing.Size(142, 16);
+            this.labelExits.TabIndex = 16;
+            this.labelExits.Text = "TỔNG LƯỢT XE RA";
+            // 
+            // labelPlateEntry
+            // 
+            this.labelPlateEntry.AutoSize = true;
+            this.labelPlateEntry.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelPlateEntry.ForeColor = System.Drawing.Color.Red;
+            this.labelPlateEntry.Location = new System.Drawing.Point(190, 592);
+            this.labelPlateEntry.Name = "labelPlateEntry";
+            this.labelPlateEntry.Size = new System.Drawing.Size(125, 16);
+            this.labelPlateEntry.TabIndex = 17;
+            this.labelPlateEntry.Text = "BIỂN SỐ XE VÀO";
+            // 
+            // labelPlateExit
+            // 
+            this.labelPlateExit.AutoSize = true;
+            this.labelPlateExit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelPlateExit.ForeColor = System.Drawing.Color.Red;
+            this.labelPlateExit.Location = new System.Drawing.Point(1041, 592);
+            this.labelPlateExit.Name = "labelPlateExit";
+            this.labelPlateExit.Size = new System.Drawing.Size(115, 16);
+            this.labelPlateExit.TabIndex = 18;
+            this.labelPlateExit.Text = "BIỂN SỐ XE RA";
+            this.labelPlateExit.Click += new System.EventHandler(this.labelPlateExit_Click);
+            // 
+            // picEntry
+            // 
+            this.picEntry.BackColor = System.Drawing.Color.Silver;
+            this.picEntry.Location = new System.Drawing.Point(27, 175);
+            this.picEntry.Name = "picEntry";
+            this.picEntry.Size = new System.Drawing.Size(457, 362);
+            this.picEntry.TabIndex = 0;
+            this.picEntry.TabStop = false;
+            // 
+            // picExit
+            // 
+            this.picExit.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.picExit.Location = new System.Drawing.Point(859, 175);
+            this.picExit.Name = "picExit";
+            this.picExit.Size = new System.Drawing.Size(450, 362);
+            this.picExit.TabIndex = 1;
+            this.picExit.TabStop = false;
+            this.picExit.Click += new System.EventHandler(this.pictureBox2_Click);
+            // 
+            // btnConnect
+            // 
+            this.btnConnect.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.btnConnect.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnConnect.Location = new System.Drawing.Point(312, 12);
+            this.btnConnect.Name = "btnConnect";
+            this.btnConnect.Size = new System.Drawing.Size(162, 23);
+            this.btnConnect.TabIndex = 5;
+            this.btnConnect.Text = "CONECT ESP32";
+            this.btnConnect.UseVisualStyleBackColor = false;
+            this.btnConnect.Click += new System.EventHandler(this.btnConnect_Click);
+            // 
+            // txtTotalCars
+            // 
+            this.txtTotalCars.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtTotalCars.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
+            this.txtTotalCars.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtTotalCars.ForeColor = System.Drawing.Color.Red;
+            this.txtTotalCars.Location = new System.Drawing.Point(537, 175);
+            this.txtTotalCars.Multiline = true;
+            this.txtTotalCars.Name = "txtTotalCars";
+            this.txtTotalCars.Size = new System.Drawing.Size(222, 119);
+            this.txtTotalCars.TabIndex = 6;
+            this.txtTotalCars.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // txtTotalEntries
+            // 
+            this.txtTotalEntries.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtTotalEntries.ForeColor = System.Drawing.Color.Blue;
+            this.txtTotalEntries.Location = new System.Drawing.Point(537, 315);
+            this.txtTotalEntries.Name = "txtTotalEntries";
+            this.txtTotalEntries.Size = new System.Drawing.Size(239, 29);
+            this.txtTotalEntries.TabIndex = 7;
+            this.txtTotalEntries.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // txtTotalExits
+            // 
+            this.txtTotalExits.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtTotalExits.ForeColor = System.Drawing.Color.Green;
+            this.txtTotalExits.Location = new System.Drawing.Point(537, 361);
+            this.txtTotalExits.Name = "txtTotalExits";
+            this.txtTotalExits.Size = new System.Drawing.Size(239, 29);
+            this.txtTotalExits.TabIndex = 8;
+            this.txtTotalExits.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // txtPlateEntry
+            // 
+            this.txtPlateEntry.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtPlateEntry.ForeColor = System.Drawing.Color.YellowGreen;
+            this.txtPlateEntry.Location = new System.Drawing.Point(113, 560);
+            this.txtPlateEntry.Name = "txtPlateEntry";
+            this.txtPlateEntry.Size = new System.Drawing.Size(277, 29);
+            this.txtPlateEntry.TabIndex = 19;
+            this.txtPlateEntry.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // txtPlateExit
+            // 
+            this.txtPlateExit.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtPlateExit.ForeColor = System.Drawing.Color.YellowGreen;
+            this.txtPlateExit.Location = new System.Drawing.Point(961, 560);
+            this.txtPlateExit.Name = "txtPlateExit";
+            this.txtPlateExit.Size = new System.Drawing.Size(283, 29);
+            this.txtPlateExit.TabIndex = 20;
+            this.txtPlateExit.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.ForeColor = System.Drawing.Color.Red;
+            this.label2.Location = new System.Drawing.Point(194, 147);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(138, 16);
+            this.label2.TabIndex = 9;
+            this.label2.Text = "CAMEARA XE VÀO";
+            this.label2.Click += new System.EventHandler(this.label2_Click);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.ForeColor = System.Drawing.Color.Red;
+            this.label3.Location = new System.Drawing.Point(1028, 138);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(128, 16);
+            this.label3.TabIndex = 10;
+            this.label3.Text = "CAMEARA XE RA";
+            // 
+            // txtLog
+            // 
+            this.txtLog.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtLog.ForeColor = System.Drawing.Color.SeaGreen;
+            this.txtLog.Location = new System.Drawing.Point(490, 396);
+            this.txtLog.Name = "txtLog";
+            this.txtLog.Size = new System.Drawing.Size(363, 193);
+            this.txtLog.TabIndex = 11;
+            this.txtLog.Text = "";
+            // 
+            // btnExit
+            // 
+            this.btnExit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.btnExit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnExit.Location = new System.Drawing.Point(872, 12);
+            this.btnExit.Name = "btnExit";
+            this.btnExit.Size = new System.Drawing.Size(145, 23);
+            this.btnExit.TabIndex = 12;
+            this.btnExit.Text = "EXIT SYSTEM";
+            this.btnExit.UseVisualStyleBackColor = false;
+            this.btnExit.Click += new System.EventHandler(this.btnExit_Click);
+            // 
+            // btnResetDb
+            // 
+            this.btnResetDb.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(192)))));
+            this.btnResetDb.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnResetDb.Location = new System.Drawing.Point(1025, 12);
+            this.btnResetDb.Name = "btnResetDb";
+            this.btnResetDb.Size = new System.Drawing.Size(145, 23);
+            this.btnResetDb.TabIndex = 13;
+            this.btnResetDb.Text = "RESET DATABASE";
+            this.btnResetDb.UseVisualStyleBackColor = false;
+            this.btnResetDb.Click += new System.EventHandler(this.btnResetDb_Click);
+            // 
+            // btnRestart
+            // 
+            this.btnRestart.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.btnRestart.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRestart.Location = new System.Drawing.Point(761, 12);
+            this.btnRestart.Name = "btnRestart";
+            this.btnRestart.Size = new System.Drawing.Size(83, 23);
+            this.btnRestart.TabIndex = 13;
+            this.btnRestart.Text = "RESTAR";
+            this.btnRestart.UseVisualStyleBackColor = false;
+            this.btnRestart.Click += new System.EventHandler(this.btnRestart_Click);
+            // 
+            // button1
+            // 
+            this.button1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button1.Location = new System.Drawing.Point(511, 12);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 21;
+            this.button1.Text = "STORY";
+            this.button1.UseVisualStyleBackColor = false;
+            // 
+            // button2
+            // 
+            this.button2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button2.Location = new System.Drawing.Point(620, 12);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(122, 23);
+            this.button2.TabIndex = 22;
+            this.button2.Text = "ADD/DEL-UID";
+            this.button2.UseVisualStyleBackColor = false;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // Form1
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.InactiveCaption;
+            this.ClientSize = new System.Drawing.Size(1362, 721);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.txtPlateExit);
+            this.Controls.Add(this.txtPlateEntry);
+            this.Controls.Add(this.labelPlateExit);
+            this.Controls.Add(this.labelPlateEntry);
+            this.Controls.Add(this.labelExits);
+            this.Controls.Add(this.txtTotalExits);
+            this.Controls.Add(this.labelEntries);
+            this.Controls.Add(this.txtTotalEntries);
+            this.Controls.Add(label4);
+            this.Controls.Add(this.btnRestart);
+            this.Controls.Add(this.btnExit);
+            this.Controls.Add(this.btnResetDb);
+            this.Controls.Add(this.txtLog);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(label1);
+            this.Controls.Add(this.txtTotalCars);
+            this.Controls.Add(this.btnConnect);
+            this.Controls.Add(this.picExit);
+            this.Controls.Add(this.picEntry);
+            this.Name = "Form1";
+            this.Text = "Form1";
+            ((System.ComponentModel.ISupportInitialize)(this.picEntry)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.picExit)).EndInit();
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+        }
+
+        #endregion
+
+        private System.Windows.Forms.PictureBox picEntry;
+        private System.Windows.Forms.PictureBox picExit;
+        private System.Windows.Forms.Button btnConnect;
+        private System.Windows.Forms.TextBox txtTotalCars;
+        private System.Windows.Forms.TextBox txtTotalEntries;
+        private System.Windows.Forms.TextBox txtTotalExits;
+        private System.Windows.Forms.TextBox txtPlateEntry;
+        private System.Windows.Forms.TextBox txtPlateExit;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.RichTextBox txtLog;
+        private System.Windows.Forms.Button btnExit;
+        private System.Windows.Forms.Button btnResetDb;
+        private System.Windows.Forms.Button btnRestart;
+        private System.Windows.Forms.Label labelEntries;
+        private System.Windows.Forms.Label labelExits;
+        private System.Windows.Forms.Label labelPlateEntry;
+        private System.Windows.Forms.Label labelPlateExit;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
+    }
+}
+

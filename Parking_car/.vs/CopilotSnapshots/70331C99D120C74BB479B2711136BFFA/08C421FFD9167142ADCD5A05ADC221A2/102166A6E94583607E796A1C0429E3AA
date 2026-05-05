@@ -1,0 +1,266 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.IO.Ports;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+
+
+namespace Parking_car
+{
+    public partial class Form1 : Form
+    {
+
+        private SerialManager _serial;
+        private CameraManager _cams;
+        private DatabaseService _db;
+        private ParkingController _controller;
+
+        public Form1()
+        {
+            InitializeComponent();
+            picEntry.SizeMode = PictureBoxSizeMode.Zoom;
+            picExit.SizeMode = PictureBoxSizeMode.Zoom;
+
+            picEntry.BackColor = Color.Black;
+            picExit.BackColor = Color.Black;
+            InitSystem();
+        }
+
+        private void InitSystem()
+        {
+            _serial = new SerialManager();
+            _cams = new CameraManager();
+            _db = new DatabaseService();
+            _db.Initialize();
+
+            _controller = new ParkingController(
+                _serial, _cams, _db,
+                Log,
+                UpdateTotalCars,
+                UpdateTotalsEntryExit,
+                UpdatePlateEntry,
+                UpdatePlateExit
+            );
+
+            _serial.LineReceived += line =>
+            {
+                // DataReceived chạy thread phụ -> marshal về UI thread
+                BeginInvoke(new Action(() => _controller.HandleEspLine(line)));
+            };
+
+            _cams.LoadDevices();
+
+            // auto start 2 cam (nếu có >=2 webcam)
+            if (_cams.Devices != null && _cams.Devices.Count > 0)
+            {
+                int entryIndex = 0;
+                int exitIndex = Math.Min(1, _cams.Devices.Count - 1);
+
+                _cams.EntryFrameArrived += bmp =>
+                {
+                    BeginInvoke(new Action(() =>
+                    {
+                        picEntry.Image?.Dispose();
+                        picEntry.Image = bmp;
+                    }));
+                };
+
+                _cams.ExitFrameArrived += bmp =>
+                {
+                    BeginInvoke(new Action(() =>
+                    {
+                        picExit.Image?.Dispose();
+                        picExit.Image = bmp;
+                    }));
+                };
+
+                _cams.StartEntry(entryIndex);
+                _cams.StartExit(exitIndex);
+
+                Log($"Camera ENTRY: {_cams.Devices[entryIndex].Name}");
+                Log($"Camera EXIT : {_cams.Devices[exitIndex].Name}");
+            }
+
+            UpdateTotalCars(_db.CountCarsInside());
+
+            // also update totals
+            UpdateTotalsEntryExit(_db.CountTotalEntries(), _db.CountTotalExits());
+        }
+
+
+        private void btnConnect_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string targetPort = "COM6";
+
+                // kiểm tra COM6 có tồn tại không
+                var ports = SerialPort.GetPortNames().OrderBy(p => p).ToArray();
+                Log("COM ports: " + (ports.Length == 0 ? "(none)" : string.Join(", ", ports)));
+
+                if (!ports.Contains(targetPort))
+                {
+                    Log($"❌ Không thấy {targetPort}. Hãy kiểm tra Device Manager hoặc cắm lại USB.");
+                    return;
+                }
+
+                // nếu đang mở rồi thì đóng trước
+                if (_serial != null && _serial.IsOpen)
+                {
+                    _serial.Close();
+                    Log("Đã đóng kết nối cũ.");
+                }
+
+                _serial.Open(targetPort, 115200);
+                Log($"✅ Đã kết nối ESP32 qua {targetPort}");
+
+                // test ping
+                _serial.SendLine("PING");
+                Log("PC> PING");
+            }
+            catch (Exception ex)
+            {
+                Log("Lỗi connect: " + ex.Message);
+            }
+        }
+
+
+        private void btnRestart_Click(object sender, EventArgs e)
+        {
+            _serial.SendLine("RESET");
+            Log("PC> RESET");
+        }
+
+        private void btnExit_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            try
+            {
+                // Ensure controller cancels background tasks and stops devices
+                _controller?.Stop();
+            }
+            catch { }
+
+            try
+            {
+                _cams.StopAll();
+                _serial.Close();
+            }
+            catch { }
+        }
+
+        private void Log(string msg)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => Log(msg)));
+                return;
+            }
+
+            string line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
+            txtLog.AppendText(line + Environment.NewLine);
+        }
+
+        private void UpdateTotalCars(int total)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => UpdateTotalCars(total)));
+                return;
+            }
+
+            txtTotalCars.Text = total.ToString();
+        }
+
+        // New: update totals for entries and exits
+        private void UpdateTotalsEntryExit(int totalEntries, int totalExits)
+        {
+            // Ensure invoked on UI thread
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => UpdateTotalsEntryExit(totalEntries, totalExits)));
+                return;
+            }
+
+            // create textboxes if they exist in designer
+            try
+            {
+                txtTotalEntries.Text = totalEntries.ToString();
+            }
+            catch { }
+
+            try
+            {
+                txtTotalExits.Text = totalExits.ToString();
+            }
+            catch { }
+        }
+
+        // Called by controller when OCR produces plate text for entry
+        private void UpdatePlateEntry(string plate)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => UpdatePlateEntry(plate)));
+                return;
+            }
+
+            try { txtPlateEntry.Text = plate ?? ""; } catch { }
+            try { Log($"UpdatePlateEntry called -> '{plate}'"); } catch { }
+        }
+
+        // Called by controller when OCR produces plate text for exit
+        private void UpdatePlateExit(string plate)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => UpdatePlateExit(plate)));
+                return;
+            }
+
+            try { txtPlateExit.Text = plate ?? ""; } catch { }
+            try { Log($"UpdatePlateExit called -> '{plate}'"); } catch { }
+        }
+
+
+        private void dateTimePicker1_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox5_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void pictureBox2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label4_Click(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
