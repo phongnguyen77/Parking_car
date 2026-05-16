@@ -25,6 +25,7 @@ static const int SERVO_EXIT_PIN  = 18;
 static const bool IR_ACTIVE_LOW = true;       // đa số module IR output LOW khi bị che
 static const uint32_t IR_DEBOUNCE_MS = 80;    // chống nhiễu
 static const uint32_t AUTH_TIMEOUT_MS = 30000; // chờ PC xác thực trong 30s
+static const uint32_t MIN_GATE_OPEN_MS = 4000; // giữ barie mở tối thiểu 4 giây
 
 static const int SERVO_CLOSED_ANGLE = 0;
 static const int SERVO_OPEN_ANGLE   = 90;
@@ -50,9 +51,11 @@ struct LaneFSM {
 
   // Timing
   uint32_t waitStartMs = 0;
+  uint32_t gateOpenMs  = 0;   // thời điểm barie mở
 
   // Flags
-  bool detectedSent = false;
+  bool detectedSent  = false;
+  bool rearWasActive = false; // edge detect: đóng khi xe qua hết (rear: active→inactive)
 };
 
 LaneFSM entryLane;
@@ -167,10 +170,14 @@ void updateLaneFSM(
       break;
 
     case GATE_OPEN:
-      // If car passed rear IR => close gate and return IDLE
-      if (rearActive) {
-        sendEvent(eventPassed);
-        lane.state = IDLE;
+      // Giữ barie mở tối thiểu MIN_GATE_OPEN_MS để tránh đóng ngay do IR nhiễu
+      if (now - lane.gateOpenMs >= MIN_GATE_OPEN_MS) {
+        // Đóng barie khi xe qua hết: rear IR chuyển từ active → inactive (falling edge)
+        if (lane.rearWasActive && !rearActive) {
+          sendEvent(eventPassed);
+          lane.state = IDLE;
+        }
+        lane.rearWasActive = rearActive;
       }
       break;
   }
@@ -198,7 +205,9 @@ void handleCommand(String cmd) {
 
   if (cmd == "OPEN_ENTRY") {
     servoSetOpen(true);
-    entryLane.state = GATE_OPEN;
+    entryLane.state        = GATE_OPEN;
+    entryLane.gateOpenMs   = millis();
+    entryLane.rearWasActive = false;
     sendEvent("ENTRY_OPENED");
     return;
   }
@@ -212,7 +221,9 @@ void handleCommand(String cmd) {
 
   if (cmd == "OPEN_EXIT") {
     servoSetOpen(false);
-    exitLane.state = GATE_OPEN;
+    exitLane.state        = GATE_OPEN;
+    exitLane.gateOpenMs   = millis();
+    exitLane.rearWasActive = false;
     sendEvent("EXIT_OPENED");
     return;
   }

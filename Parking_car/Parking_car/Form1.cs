@@ -20,8 +20,6 @@ namespace Parking_car
         private CameraManager _cams;
         private DatabaseService _db;
         private ParkingController _controller;
-        private static readonly Random _rand = new Random();
-
         // trackbar zoom percents (default 100)
         private int _entryZoomPercent = 100;
         private int _exitZoomPercent = 100;
@@ -41,6 +39,7 @@ namespace Parking_car
             _cams = new CameraManager();
             _db = new DatabaseService();
             _db.Initialize();
+            _db.SeedRfidMappings();
 
             _controller = new ParkingController(
                 _serial, _cams, _db,
@@ -150,17 +149,6 @@ namespace Parking_car
                     f.ShowDialog(this);
                 }
 
-                // after closing UID form, populate plate textboxes with random plates from list
-                try
-                {
-                    var plates = new[] { "59H1568", "51H13903", "51H12902", "59H27723" };
-                    string entry = plates[_rand.Next(plates.Length)];
-                    string exit = plates[_rand.Next(plates.Length)];
-                    UpdatePlateEntry(entry);
-                    UpdatePlateExit(exit);
-                    Log($"Random plates set: ENTRY={entry}, EXIT={exit}");
-                }
-                catch { }
             }
             catch (Exception ex)
             {
@@ -283,7 +271,7 @@ namespace Parking_car
                 return;
             }
 
-            try { txtPlateEntry.Text = string.IsNullOrWhiteSpace(plate) ? "(Không đọc được)" : plate; } catch { }
+            try { txtPlateEntry.Text = string.IsNullOrWhiteSpace(plate) ? "(Chưa quẹt thẻ)" : plate; } catch { }
             try { Log($"UpdatePlateEntry called -> '{plate}'"); } catch { }
         }
 
@@ -295,7 +283,7 @@ namespace Parking_car
                 return;
             }
 
-            try { txtPlateExit.Text = string.IsNullOrWhiteSpace(plate) ? "(Không đọc được)" : plate; } catch { }
+            try { txtPlateExit.Text = string.IsNullOrWhiteSpace(plate) ? "(Chưa quẹt thẻ)" : plate; } catch { }
             try { Log($"UpdatePlateExit called -> '{plate}'"); } catch { }
         }
 

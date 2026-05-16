@@ -282,6 +282,33 @@ VALUES(@rfid, @plate);
             }
         }
 
+        // Nạp sẵn các thẻ RFID đã biết (INSERT OR IGNORE = không ghi đè nếu đã có)
+        public void SeedRfidMappings()
+        {
+            var mappings = new[]
+            {
+                ("49 17 46 03", "59H27723"),
+                ("7C 9C CB 01", "59H15678"),
+                ("21 80 F2 06", "51H12902"),
+                ("5B C0 3B 03", "51H13903"),
+            };
+
+            using (var conn = new SQLiteConnection(_connStr))
+            {
+                conn.Open();
+                foreach (var (rfid, plate) in mappings)
+                {
+                    string sql = @"INSERT OR IGNORE INTO rfid_registry(rfid, plate) VALUES(@rfid, @plate);";
+                    using (var cmd = new SQLiteCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@rfid", rfid);
+                        cmd.Parameters.AddWithValue("@plate", plate);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
         public bool IsRfidInside(string rfid)
         {
             if (string.IsNullOrWhiteSpace(rfid)) return false;
