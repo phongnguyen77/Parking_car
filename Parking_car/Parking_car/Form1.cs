@@ -29,16 +29,9 @@ namespace Parking_car
         public Form1()
         {
             InitializeComponent();
-            try { picEntry.SizeMode = PictureBoxSizeMode.Zoom; } catch { }
-            try { picExit.SizeMode = PictureBoxSizeMode.Zoom; } catch { }
-
-            try { picEntry.BackColor = Color.Black; } catch { }
-            try { picExit.BackColor = Color.Black; } catch { }
             InitSystem();
 
-            // wire history button
             try { button1.Click += button1_Click; } catch { }
-            // wire add/del uid button
             try { button2.Click += button2_Click; } catch { }
         }
 
@@ -423,7 +416,7 @@ namespace Parking_car
             try
             {
                 _entryZoomPercent = trackBarEntryZoom.Value;
-                try { lblEntryZoom.Text = _entryZoomPercent + "%"; } catch { }
+                try { lblEntryZoom.Text = "Zoom: " + _entryZoomPercent + "%"; } catch { }
             }
             catch { }
         }
@@ -433,7 +426,7 @@ namespace Parking_car
             try
             {
                 _exitZoomPercent = trackBarExitZoom.Value;
-                try { lblExitZoom.Text = _exitZoomPercent + "%"; } catch { }
+                try { lblExitZoom.Text = "Zoom: " + _exitZoomPercent + "%"; } catch { }
             }
             catch { }
         }
