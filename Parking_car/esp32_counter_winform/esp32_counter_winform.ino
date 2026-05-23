@@ -64,6 +64,10 @@ LaneFSM exitLane;
 // ===================== SERIAL LINE BUFFER =====================
 String serialLine;
 
+// Track servo state to avoid writing every loop
+static bool entryGateIsOpen = false;
+static bool exitGateIsOpen  = false;
+
 // ===================== HELPERS =====================
 bool readIR(int pin) {
   int v = digitalRead(pin);
@@ -194,17 +198,21 @@ void handleCommand(String cmd) {
   }
 
   if (cmd == "RESET") {
-    // reset states and close gates
     entryLane.state = IDLE;
     exitLane.state  = IDLE;
     servoSetClosed(true);
     servoSetClosed(false);
+    entryGateIsOpen = false;
+    exitGateIsOpen  = false;
     sendEvent("RESET_OK");
     return;
   }
 
   if (cmd == "OPEN_ENTRY") {
-    servoSetOpen(true);
+    if (!entryGateIsOpen) {
+      servoSetOpen(true);
+      entryGateIsOpen = true;
+    }
     entryLane.state        = GATE_OPEN;
     entryLane.gateOpenMs   = millis();
     entryLane.rearWasActive = false;
@@ -213,14 +221,20 @@ void handleCommand(String cmd) {
   }
 
   if (cmd == "CLOSE_ENTRY") {
-    servoSetClosed(true);
+    if (entryGateIsOpen) {
+      servoSetClosed(true);
+      entryGateIsOpen = false;
+    }
     entryLane.state = IDLE;
     sendEvent("ENTRY_CLOSED");
     return;
   }
 
   if (cmd == "OPEN_EXIT") {
-    servoSetOpen(false);
+    if (!exitGateIsOpen) {
+      servoSetOpen(false);
+      exitGateIsOpen = true;
+    }
     exitLane.state        = GATE_OPEN;
     exitLane.gateOpenMs   = millis();
     exitLane.rearWasActive = false;
@@ -229,7 +243,10 @@ void handleCommand(String cmd) {
   }
 
   if (cmd == "CLOSE_EXIT") {
-    servoSetClosed(false);
+    if (exitGateIsOpen) {
+      servoSetClosed(false);
+      exitGateIsOpen = false;
+    }
     exitLane.state = IDLE;
     sendEvent("EXIT_CLOSED");
     return;
@@ -298,9 +315,15 @@ void loop() {
   updateLaneFSM(exitLane, exitFront, exitRear,
                 "EXIT_DETECTED", "EXIT_PASSED", "EXIT_TIMEOUT");
 
-  // If state returned to IDLE from GATE_OPEN, close servo here (ensures closure)
-  if (entryLane.state == IDLE) servoSetClosed(true);
-  if (exitLane.state  == IDLE) servoSetClosed(false);
+  // Close servo only on transition to IDLE (not every loop iteration)
+  if (entryLane.state == IDLE && entryGateIsOpen) {
+    servoSetClosed(true);
+    entryGateIsOpen = false;
+  }
+  if (exitLane.state == IDLE && exitGateIsOpen) {
+    servoSetClosed(false);
+    exitGateIsOpen = false;
+  }
 
   delay(5);
 }

@@ -5,7 +5,6 @@ using System.Data;
 using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,9 +19,14 @@ namespace Parking_car
         private CameraManager _cams;
         private DatabaseService _db;
         private ParkingController _controller;
-        // trackbar zoom percents (default 100)
         private int _entryZoomPercent = 100;
         private int _exitZoomPercent = 100;
+
+        // Overlay thông báo mở barie
+        private Label _lblNotifyEntry;
+        private Label _lblNotifyExit;
+        private Timer _timerEntry;
+        private Timer _timerExit;
 
         public Form1()
         {
@@ -39,7 +43,8 @@ namespace Parking_car
             _cams = new CameraManager();
             _db = new DatabaseService();
             _db.Initialize();
-            _db.SeedRfidMappings();
+
+            InitNotifyOverlays();
 
             _controller = new ParkingController(
                 _serial, _cams, _db,
@@ -47,13 +52,20 @@ namespace Parking_car
                 UpdateTotalCars,
                 UpdateTotalsEntryExit,
                 UpdatePlateEntry,
-                UpdatePlateExit
+                UpdatePlateExit,
+                plateRecognizerToken: "a539ee56e86aa996a4300dc14b9f421b8fc8277d",
+                notifyEntryOpen: ShowEntryNotify,
+                notifyExitOpen:  ShowExitNotify,
+                warnEntry:       ShowEntryWarning,
+                warnExit:        ShowExitWarning
             );
 
             _serial.LineReceived += line =>
             {
                 BeginInvoke(new Action(() => _controller.HandleEspLine(line)));
             };
+
+            InitOcrButtons();
 
             _cams.LoadDevices();
 
@@ -125,35 +137,7 @@ namespace Parking_car
 
         private void button2_Click(object sender, EventArgs e)
         {
-            try
-            {
-                // attempt to find UidForm type dynamically
-                var asm = Assembly.GetExecutingAssembly();
-                var t = asm.GetTypes().FirstOrDefault(x => x.Name.Equals("UidForm", StringComparison.OrdinalIgnoreCase));
-                if (t == null)
-                {
-                    Log("UID form type not found.");
-                    return;
-                }
-
-                var ctor = t.GetConstructor(new[] { typeof(DatabaseService) });
-                if (ctor == null)
-                {
-                    Log("UidForm constructor with DatabaseService not found.");
-                    return;
-                }
-
-                using (var f = (Form)ctor.Invoke(new object[] { _db }))
-                {
-                    f.StartPosition = FormStartPosition.CenterParent;
-                    f.ShowDialog(this);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                Log("Lỗi mở UID form: " + ex.Message);
-            }
+            MessageBox.Show("Chức năng gán thẻ đã được tắt.\nHệ thống hiện dùng camera đọc biển số tự động.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnConnect_Click(object sender, EventArgs e)
@@ -237,7 +221,12 @@ namespace Parking_car
             }
 
             string line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
-            try { txtLog.AppendText(line + Environment.NewLine); } catch { }
+            try
+            {
+                txtLog.AppendText(line + Environment.NewLine);
+                txtLog.SelectionStart = txtLog.TextLength;
+                txtLog.ScrollToCaret();
+            } catch { }
         }
 
         private void UpdateTotalCars(int total)
@@ -265,26 +254,158 @@ namespace Parking_car
 
         private void UpdatePlateEntry(string plate)
         {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new Action(() => UpdatePlateEntry(plate)));
-                return;
-            }
-
-            try { txtPlateEntry.Text = string.IsNullOrWhiteSpace(plate) ? "(Chưa quẹt thẻ)" : plate; } catch { }
-            try { Log($"UpdatePlateEntry called -> '{plate}'"); } catch { }
+            if (InvokeRequired) { BeginInvoke(new Action(() => UpdatePlateEntry(plate))); return; }
+            try { txtPlateEntry.Text = string.IsNullOrWhiteSpace(plate) ? "(Chờ xe vào)" : plate; } catch { }
         }
 
         private void UpdatePlateExit(string plate)
         {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new Action(() => UpdatePlateExit(plate)));
-                return;
-            }
+            if (InvokeRequired) { BeginInvoke(new Action(() => UpdatePlateExit(plate))); return; }
+            try { txtPlateExit.Text = string.IsNullOrWhiteSpace(plate) ? "(Chờ xe ra)" : plate; } catch { }
+        }
 
-            try { txtPlateExit.Text = string.IsNullOrWhiteSpace(plate) ? "(Chưa quẹt thẻ)" : plate; } catch { }
-            try { Log($"UpdatePlateExit called -> '{plate}'"); } catch { }
+        private void InitOcrButtons()
+        {
+            AddLaneButtons(pnlEntryCard,
+                onOcr:   async () => await _controller.RetriggerEntryOcrAsync(),
+                onOpen:  ()      => _controller.ManualOpenEntry(),
+                onClose: ()      => _controller.ManualCloseEntry(),
+                onIssue: async () => await _controller.IssueCardEntryAsync(
+                    txtPlateEntry.Text.Trim().Replace("(Chờ xe vào)", "").Trim()));
+
+            AddLaneButtons(pnlExitCard,
+                onOcr:   async () => await _controller.RetriggerExitOcrAsync(),
+                onOpen:  ()      => _controller.ManualOpenExit(),
+                onClose: ()      => _controller.ManualCloseExit(),
+                onIssue: async () => await _controller.IssueCardExitAsync(
+                    txtPlateExit.Text.Trim().Replace("(Chờ xe ra)", "").Trim()));
+        }
+
+        private void AddLaneButtons(Panel panel, Func<Task> onOcr, Action onOpen, Action onClose, Func<Task> onIssue)
+        {
+            // 4 button chia đều trong 430px (x=10..440), gap 3px
+            // Mỗi button rộng 104px, button cuối 109px
+            // B1 x=10  B2 x=117  B3 x=224  B4 x=331
+            var specs = new[]
+            {
+                (x:10,  w:104, text:"ĐỌC LẠI BIỂN", back:Color.FromArgb(0,80,130),   border:Color.FromArgb(0,180,220)),
+                (x:117, w:104, text:"MỞ BARIE",      back:Color.FromArgb(0,130,55),   border:Color.FromArgb(0,220,100)),
+                (x:224, w:104, text:"ĐÓNG BARIE",    back:Color.FromArgb(110,25,25),  border:Color.FromArgb(210,55,55)),
+                (x:331, w:109, text:"CẤP THẺ",       back:Color.FromArgb(160,90,0),   border:Color.FromArgb(255,160,0)),
+            };
+
+            Action<object,EventArgs>[] handlers =
+            {
+                async (s,e) => await onOcr(),
+                (s,e)       => onOpen(),
+                (s,e)       => onClose(),
+                async (s,e) => await onIssue(),
+            };
+
+            for (int i = 0; i < specs.Length; i++)
+            {
+                var (x, w, text, back, border) = specs[i];
+                var hdl = handlers[i];
+                var btn = new Button
+                {
+                    Location  = new Point(x, 532),
+                    Size      = new Size(w, 46),
+                    Text      = text,
+                    Font      = new Font("Segoe UI", 8f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    BackColor = back,
+                    FlatStyle = FlatStyle.Flat,
+                    Cursor    = Cursors.Hand
+                };
+                btn.FlatAppearance.BorderColor = border;
+                btn.Click += new EventHandler(hdl);
+                panel.Controls.Add(btn);
+                btn.BringToFront();
+            }
+        }
+
+        private void InitNotifyOverlays()
+        {
+            // Overlay "MỜI XE VÀO" — đè lên picEntry (Location=10,44 Size=430,340)
+            _lblNotifyEntry = new Label
+            {
+                Location  = new Point(10, 44),
+                Size      = new Size(430, 340),
+                Text      = "MỜI XE VÀO",
+                Font      = new Font("Segoe UI", 36f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(0, 150, 60),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible   = false
+            };
+            pnlEntryCard.Controls.Add(_lblNotifyEntry);
+            _lblNotifyEntry.BringToFront();
+
+            // Overlay "MỜI XE RA" — đè lên picExit
+            _lblNotifyExit = new Label
+            {
+                Location  = new Point(10, 44),
+                Size      = new Size(430, 340),
+                Text      = "MỜI XE RA",
+                Font      = new Font("Segoe UI", 36f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(0, 110, 190),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible   = false
+            };
+            pnlExitCard.Controls.Add(_lblNotifyExit);
+            _lblNotifyExit.BringToFront();
+
+            // Timer tự ẩn sau 4 giây
+            _timerEntry = new Timer { Interval = 4000 };
+            _timerEntry.Tick += (s, e) => { _lblNotifyEntry.Visible = false; _timerEntry.Stop(); };
+
+            _timerExit = new Timer { Interval = 4000 };
+            _timerExit.Tick += (s, e) => { _lblNotifyExit.Visible = false; _timerExit.Stop(); };
+        }
+
+        private void ShowEntryNotify()
+        {
+            if (InvokeRequired) { BeginInvoke(new Action(ShowEntryNotify)); return; }
+            _lblNotifyEntry.Text      = "MỜI XE VÀO";
+            _lblNotifyEntry.BackColor = Color.FromArgb(0, 150, 60);
+            _lblNotifyEntry.Font      = new Font("Segoe UI", 36f, FontStyle.Bold);
+            _lblNotifyEntry.Visible   = true;
+            _timerEntry.Stop();
+            _timerEntry.Start();
+        }
+
+        private void ShowExitNotify()
+        {
+            if (InvokeRequired) { BeginInvoke(new Action(ShowExitNotify)); return; }
+            _lblNotifyExit.Text      = "MỜI XE RA";
+            _lblNotifyExit.BackColor = Color.FromArgb(0, 110, 190);
+            _lblNotifyExit.Font      = new Font("Segoe UI", 36f, FontStyle.Bold);
+            _lblNotifyExit.Visible   = true;
+            _timerExit.Stop();
+            _timerExit.Start();
+        }
+
+        private void ShowEntryWarning(string msg)
+        {
+            if (InvokeRequired) { BeginInvoke(new Action(() => ShowEntryWarning(msg))); return; }
+            _lblNotifyEntry.Text      = msg;
+            _lblNotifyEntry.BackColor = Color.FromArgb(180, 30, 30);
+            _lblNotifyEntry.Font      = new Font("Segoe UI", 22f, FontStyle.Bold);
+            _lblNotifyEntry.Visible   = true;
+            _timerEntry.Stop();
+            _timerEntry.Start();
+        }
+
+        private void ShowExitWarning(string msg)
+        {
+            if (InvokeRequired) { BeginInvoke(new Action(() => ShowExitWarning(msg))); return; }
+            _lblNotifyExit.Text      = msg;
+            _lblNotifyExit.BackColor = Color.FromArgb(180, 30, 30);
+            _lblNotifyExit.Font      = new Font("Segoe UI", 22f, FontStyle.Bold);
+            _lblNotifyExit.Visible   = true;
+            _timerExit.Stop();
+            _timerExit.Start();
         }
 
         // small empty handlers to satisfy designer events
@@ -296,11 +417,13 @@ namespace Parking_car
         private void label4_Click(object sender, EventArgs e) { }
         private void labelPlateExit_Click(object sender, EventArgs e) { }
 
-        // Embedded HistoryForm kept for compatibility
+        // Embedded HistoryForm
         private class HistoryForm : Form
         {
             private readonly DatabaseService _db;
             private DataGridView _dgv;
+            private Button _btnRefresh;
+            private Label _lblCount;
 
             public HistoryForm(DatabaseService db)
             {
@@ -311,7 +434,30 @@ namespace Parking_car
             private void InitializeComponent()
             {
                 this.Text = "Lịch sử ra/vào";
-                this.ClientSize = new Size(900, 600);
+                this.ClientSize = new Size(1000, 620);
+                this.StartPosition = FormStartPosition.CenterParent;
+
+                // Toolbar panel
+                var toolbar = new Panel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(6, 4, 6, 0) };
+
+                _btnRefresh = new Button
+                {
+                    Text = "Làm mới",
+                    Width = 90,
+                    Height = 30,
+                    Location = new Point(6, 5)
+                };
+                _btnRefresh.Click += (s, e) => LoadHistory();
+
+                _lblCount = new Label
+                {
+                    AutoSize = true,
+                    Location = new Point(110, 10),
+                    Font = new Font("Segoe UI", 9f)
+                };
+
+                toolbar.Controls.Add(_btnRefresh);
+                toolbar.Controls.Add(_lblCount);
 
                 _dgv = new DataGridView
                 {
@@ -320,23 +466,43 @@ namespace Parking_car
                     AllowUserToAddRows = false,
                     AllowUserToDeleteRows = false,
                     SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    RowHeadersVisible = false,
+                    Font = new Font("Segoe UI", 9.5f),
+                    GridColor = Color.LightGray,
+                    BorderStyle = BorderStyle.None,
+                    AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(248, 248, 248) }
+                };
+                _dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+
+                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "No",      HeaderText = "STT",           Width = 50,  AutoSizeMode = DataGridViewAutoSizeColumnMode.None });
+                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Plate",   HeaderText = "Biển số" });
+                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Rfid",    HeaderText = "Mã thẻ (UID)" });
+                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "TimeIn",  HeaderText = "Thời gian vào" });
+                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "TimeOut", HeaderText = "Thời gian ra" });
+                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status",  HeaderText = "Trạng thái",    Width = 110, AutoSizeMode = DataGridViewAutoSizeColumnMode.None });
+
+                // Tô màu theo trạng thái
+                _dgv.CellFormatting += (s, e) =>
+                {
+                    if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+                    var row = _dgv.Rows[e.RowIndex];
+                    string timeOut = row.Cells["TimeOut"].Value?.ToString() ?? "";
+                    if (string.IsNullOrWhiteSpace(timeOut))
+                    {
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(198, 239, 206); // xanh lá nhạt
+                        row.DefaultCellStyle.ForeColor = Color.FromArgb(0, 97, 0);
+                    }
+                    else
+                    {
+                        row.DefaultCellStyle.BackColor = Color.White;
+                        row.DefaultCellStyle.ForeColor = Color.Black;
+                    }
                 };
 
-                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "No", HeaderText = "STT", Width = 60 });
-                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Plate", HeaderText = "Biển số" });
-                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Rfid", HeaderText = "Mã thẻ (UID)" });
-                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "TimeIn", HeaderText = "Thời gian vào" });
-                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "TimeOut", HeaderText = "Thời gian ra" });
-                _dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Lane", HeaderText = "Lane" });
-
                 this.Controls.Add(_dgv);
-                this.Load += HistoryForm_Load;
-            }
-
-            private void HistoryForm_Load(object sender, EventArgs e)
-            {
-                LoadHistory();
+                this.Controls.Add(toolbar);
+                this.Load += (s, e) => LoadHistory();
             }
 
             private void LoadHistory()
@@ -346,10 +512,15 @@ namespace Parking_car
                     var logs = _db.GetAllLogs();
                     _dgv.Rows.Clear();
                     int idx = 1;
+                    int inside = 0;
                     foreach (var r in logs)
                     {
-                        _dgv.Rows.Add(idx++, r.Plate, r.Rfid, r.TimeIn, r.TimeOut, r.Lane);
+                        bool parked = string.IsNullOrWhiteSpace(r.TimeOut);
+                        string status = parked ? "Đang đậu" : "Đã ra";
+                        _dgv.Rows.Add(idx++, r.Plate, r.Rfid, r.TimeIn, r.TimeOut, status);
+                        if (parked) inside++;
                     }
+                    _lblCount.Text = $"Tổng: {logs.Count} lượt  |  Đang đậu: {inside}";
                 }
                 catch (Exception ex)
                 {

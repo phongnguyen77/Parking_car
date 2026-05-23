@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "d:\\Parking_car_test\\Parking_car\\Parking_car"
+    ],
+    "allow": [
+      "Read(//d/Parking_car_test/Parking_car/**)",
+      "Bash(where nuget *)"
+    ]
+  }
+}

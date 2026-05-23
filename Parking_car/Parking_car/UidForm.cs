@@ -16,9 +16,9 @@ namespace Parking_car
         private TextBox _txtRfid;
         private TextBox _txtPlate;
 
-        public UidForm(DatabaseService db)
+        public UidForm(DatabaseService db) //
         {
-            _db = db ?? throw new ArgumentNullException(nameof(db));
+            _db = db ?? throw new ArgumentNullException(nameof(db)); 
             InitializeComponent();
             LoadMappings();
         }

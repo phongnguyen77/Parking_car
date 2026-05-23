@@ -106,7 +106,6 @@ D:\CNTT\Parking_car\Parking_car\Parking_car\bin\Debug\System.Memory.xml
 D:\CNTT\Parking_car\Parking_car\Parking_car\bin\Debug\System.Numerics.Vectors.xml
 D:\CNTT\Parking_car\Parking_car\Parking_car\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
 D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.csproj.AssemblyReference.cache
-D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.exe.config
 D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.Form1.resources
 D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.Properties.Resources.resources
 D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.csproj.GenerateResource.cache
@@ -114,3 +113,15 @@ D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.csproj.CoreCom
 D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_.B3ADE333.Up2Date
 D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.exe
 D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.pdb
+C:\Users\phong\Documents\ParkingDebug\dll\x86\OpenCvSharpExtern.dll
+C:\Users\phong\Documents\ParkingDebug\dll\x86\opencv_videoio_ffmpeg455.dll
+C:\Users\phong\Documents\ParkingDebug\dll\x64\OpenCvSharpExtern.dll
+C:\Users\phong\Documents\ParkingDebug\dll\x64\opencv_videoio_ffmpeg455_64.dll
+C:\Users\phong\Documents\ParkingDebug\x86\leptonica-1.80.0.dll
+C:\Users\phong\Documents\ParkingDebug\x86\tesseract41.dll
+C:\Users\phong\Documents\ParkingDebug\x64\leptonica-1.80.0.dll
+C:\Users\phong\Documents\ParkingDebug\x64\tesseract41.dll
+C:\Users\phong\Documents\ParkingDebug\Parking_car.exe.config
+C:\Users\phong\Documents\ParkingDebug\Parking_car.exe
+C:\Users\phong\Documents\ParkingDebug\Parking_car.pdb
+D:\CNTT\Parking_car\Parking_car\Parking_car\obj\Debug\Parking_car.exe.config

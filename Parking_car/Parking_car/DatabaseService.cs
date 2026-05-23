@@ -309,6 +309,27 @@ VALUES(@rfid, @plate);
             }
         }
 
+        public bool IsPlateInside(string plate)
+        {
+            if (string.IsNullOrWhiteSpace(plate)) return false;
+            using (var conn = new SQLiteConnection(_connStr))
+            {
+                conn.Open();
+                string sql = @"
+SELECT COUNT(*) FROM parking_log
+WHERE plate = @plate
+  AND time_in IS NOT NULL AND time_in <> ''
+  AND (time_out IS NULL OR time_out = '');
+";
+                using (var cmd = new SQLiteCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@plate", plate);
+                    object r = cmd.ExecuteScalar();
+                    return Convert.ToInt32(r) > 0;
+                }
+            }
+        }
+
         public bool IsRfidInside(string rfid)
         {
             if (string.IsNullOrWhiteSpace(rfid)) return false;
